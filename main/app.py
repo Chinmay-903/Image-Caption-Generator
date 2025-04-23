@@ -1,9 +1,10 @@
 import os
 import requests
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_file
 from PIL import Image
 from transformers import BlipProcessor, BlipForConditionalGeneration
 import torch
+from gtts import gTTS  # Importing the gTTS library
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
@@ -30,10 +31,16 @@ def generate_captions(image: Image.Image):
 
     return conditional_caption, unconditional_caption
 
+# Function to convert text to speech using gTTS
+def text_to_speech(text: str, filename: str):
+    tts = gTTS(text=text, lang='en')
+    tts.save(filename)
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     captions = None
     image_path = None
+    audio_file = None  # Variable to store audio file path
 
     if request.method == 'POST':
         # Handle image URL
@@ -54,8 +61,17 @@ def index():
                 captions = generate_captions(image)
                 image_path = '/' + filepath
 
-    return render_template('index.html', captions=captions, image_path=image_path)
+        # Convert the generated captions to speech (if captions exist)
+        if captions:
+            conditional_caption, unconditional_caption = captions
+            combined_caption = f"Conditional caption: {conditional_caption}. Unconditional caption: {unconditional_caption}"
+            audio_filename = 'static/audio/caption_audio.mp3'
+            text_to_speech(combined_caption, audio_filename)
+            audio_file = audio_filename
+
+    return render_template('index.html', captions=captions, image_path=image_path, audio_file=audio_file)
 
 if __name__ == '__main__':
     os.makedirs('static/uploads', exist_ok=True)
+    os.makedirs('static/audio', exist_ok=True)  # Create the 'audio' folder for storing audio files
     app.run(debug=True)
