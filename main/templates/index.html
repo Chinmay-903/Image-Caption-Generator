@@ -1,67 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>BLIP Image Caption Generator</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        .container {
-            max-width: 800px;
-            margin-top: 50px;
-        }
-        .card {
-            border-radius: 15px;
-        }
-        .preview-img {
-            max-width: 100%;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            margin-bottom: 15px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>ImaGenie</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    .heading-serif {
+      font-family: 'Playfair Display', serif;
+    }
+  </style>
+  <script>
+    function speakText(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      speechSynthesis.speak(utterance);
+    }
+
+    // Autoplay only the conditional caption when captions are loaded
+    window.addEventListener('DOMContentLoaded', () => {
+      const conditionalCaption = document.getElementById('autoSpeakConditional');
+      if (conditionalCaption) {
+        const utterance = new SpeechSynthesisUtterance(conditionalCaption.textContent);
+        speechSynthesis.speak(utterance);
+      }
+    });
+  </script>
 </head>
-<body>
-<div class="container">
-    <div class="text-center mb-4">
-        <h1 class="display-5 fw-bold">🧠 BLIP Image Caption Generator</h1>
-        <p class="lead">Generate captions for your images using a deep learning model.</p>
+<body class="relative text-white min-h-screen flex flex-col items-center justify-start p-6 overflow-x-hidden">
+
+  <!-- Background Video -->
+  <video autoplay muted loop playsinline class="fixed top-0 left-0 w-full h-full object-cover -z-10">
+    <source src="{{ url_for('static', filename='uploads/3214448-uhd_3840_2160_25fps.mp4') }}" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Main Content -->
+  <h1 class="heading-serif text-4xl font-bold text-white mb-8 text-center z-10 drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">
+    <span class="text-orange-500">Ima</span><span class="text-black">Genie</span>
+  </h1>
+
+  <form method="POST" enctype="multipart/form-data"
+        class="bg-white bg-opacity-80 p-6 rounded-2xl shadow-lg w-full max-w-lg z-10">
+    <label class="block font-semibold mt-4 text-left text-gray-800">Upload an image:</label>
+    <input type="file" name="image_file" class="mt-1 p-2 border w-full rounded-md">
+
+    <label class="block font-semibold mt-6 text-left text-gray-800">Or enter image URL:</label>
+    <input type="text" name="image_url" placeholder="https://example.com/image.jpg" class="mt-1 p-2 border w-full rounded-md">
+
+    <input type="submit" value="Generate Captions"
+           class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md transition">
+  </form>
+
+  <!-- Captions Output -->
+  {% if captions %}
+  <div class="mt-10 w-full max-w-3xl text-center z-10">
+    <h2 class="text-2xl font-semibold text-white mb-6 drop-shadow">Results:</h2>
+    <img src="{{ image_path }}" alt="Uploaded Image"
+         class="w-full max-w-md mx-auto rounded-lg shadow-lg opacity-0 transition-opacity duration-1000 ease-in-out"
+         onload="this.classList.remove('opacity-0')">
+
+    <div class="bg-white bg-opacity-80 p-4 mt-6 shadow rounded-md border-l-4 border-blue-400 text-left text-black">
+      <strong class="text-blue-700 block mb-2">Conditional:</strong>
+      <p id="autoSpeakConditional">{{ captions[0] }}</p>
+      <button onclick="speakText('{{ captions[0] }}')" class="mt-2 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+          <path d="M6.79 5.093A.5.5 0 0 1 7.5 5.5v5a.5.5 0 0 1-.79.407L4.824 9.633H3.5A1.5 1.5 0 0 1 2 8.133v-1.266A1.5 1.5 0 0 1 3.5 5.367h1.324l2.466-1.227z"/>
+          <path d="M11.536 14.01a.5.5 0 0 1-.706-.706A6.978 6.978 0 0 0 13 8a6.978 6.978 0 0 0-2.17-5.304.5.5 0 0 1 .706-.706A7.978 7.978 0 0 1 14 8a7.978 7.978 0 0 1-2.464 6.01z"/>
+          <path d="M10.293 11.657a.5.5 0 0 1-.708-.707A3.99 3.99 0 0 0 11 8a3.99 3.99 0 0 0-1.415-3.05.5.5 0 0 1 .708-.707A4.99 4.99 0 0 1 12 8a4.99 4.99 0 0 1-1.707 3.657z"/>
+        </svg>
+        Play
+      </button>
     </div>
 
-    <div class="card p-4 shadow-sm">
-        <form method="POST" enctype="multipart/form-data">
-            <div class="mb-3">
-                <label for="image_file" class="form-label">Upload an Image</label>
-                <input class="form-control" type="file" name="image_file" id="image_file">
-            </div>
-            <div class="text-center my-2">— or —</div>
-            <div class="mb-3">
-                <label for="image_url" class="form-label">Enter Image URL</label>
-                <input class="form-control" type="text" name="image_url" id="image_url" placeholder="https://example.com/image.jpg">
-            </div>
-            <div class="text-center">
-                <button type="submit" class="btn btn-primary px-4">Generate Captions</button>
-            </div>
-        </form>
+    <div class="bg-white bg-opacity-80 p-4 mt-4 shadow rounded-md border-l-4 border-green-400 text-left text-black">
+      <strong class="text-green-700 block mb-2">Unconditional:</strong>
+      <p>{{ captions[1] }}</p>
     </div>
-
-    {% if captions %}
-        <div class="card mt-5 p-4 shadow-sm">
-            <h4 class="mb-3 text-center">🖼️ Image Preview</h4>
-            <div class="text-center">
-                <img src="{{ image_path }}" alt="Uploaded Image" class="preview-img">
-            </div>
-            <hr>
-            <h5>📝 Captions</h5>
-            <p><strong>Conditional:</strong> {{ captions[0] }}</p>
-            <p><strong>Unconditional:</strong> {{ captions[1] }}</p>
-        </div>
-    {% endif %}
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </div>
+  {% endif %}
 </body>
 </html>
